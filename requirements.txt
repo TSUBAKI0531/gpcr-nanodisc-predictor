@@ -1,0 +1,7 @@
+streamlit
+biopython
+matplotlib
+requests
+numpy
+stmol
+py3Dmol
