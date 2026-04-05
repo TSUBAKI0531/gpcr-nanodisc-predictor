@@ -22,7 +22,7 @@ import requests
 import streamlit as st
 from Bio.PDB import PDBList, PDBParser
 from fpdf import FPDF
-from stmol import showmol
+import streamlit.components.v1 as components
 
 # =============================================================================
 # Constants & Configuration
@@ -295,7 +295,7 @@ def render_3d_view(pdb_data: str, profile: ProfileData, belt_width: float) -> No
         "opacity": 0.25,
     })
     view.zoomTo()
-    showmol(view, height=450, width=800)
+    components.html(view._make_html(), height=450, width=800, scrolling=False)
 
 
 def plot_hydrophobic_profile(
