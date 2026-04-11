@@ -284,24 +284,35 @@ def render_3d_view(pdb_data: str, profile: ProfileData, belt_width: float) -> No
         .replace("${", "\\${")
     )
 
-    html = f"""
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.4.2/3Dmol-min.js"></script>
-    <div id="viewer3d" style="width:100%;height:450px;position:relative;"></div>
+    <style>
+        body {{ margin:0; padding:0; overflow:hidden; }}
+        #viewer3d {{ width:100%; height:450px; position:relative; }}
+    </style>
+</head>
+<body>
+    <div id="viewer3d"></div>
     <script>
-        var viewer = $3Dmol.createViewer("viewer3d", {{backgroundColor: "white"}});
-        viewer.addModel(`{pdb_escaped}`, "pdb");
-        viewer.setStyle({{}}, {{cartoon: {{color: "spectrum"}}}});
-        viewer.addShape({{
-            type: "box",
-            center: {{x: 0, y: 0, z: {center_z:.2f}}},
-            dimensions: {{w: 60, h: 60, d: {belt_width:.2f}}},
-            color: "yellow",
-            opacity: 0.25
+        window.addEventListener("load", function() {{
+            var viewer = $3Dmol.createViewer("viewer3d", {{backgroundColor: "white"}});
+            viewer.addModel(`{pdb_escaped}`, "pdb");
+            viewer.setStyle({{}}, {{cartoon: {{color: "spectrum"}}}});
+            viewer.addShape({{
+                type: "box",
+                center: {{x: 0, y: 0, z: {center_z:.2f}}},
+                dimensions: {{w: 60, h: 60, d: {belt_width:.2f}}},
+                color: "yellow",
+                opacity: 0.25
+            }});
+            viewer.zoomTo();
+            viewer.render();
         }});
-        viewer.zoomTo();
-        viewer.render();
     </script>
-    """
+</body>
+</html>"""
     components.html(html, height=480, width=800, scrolling=False)
 
 
