@@ -295,7 +295,17 @@ def render_3d_view(pdb_data: str, profile: ProfileData, belt_width: float) -> No
 function initViewer() {{
     var viewer = $3Dmol.createViewer("viewer3d", {{backgroundColor: "white"}});
     viewer.addModel(`{pdb_escaped}`, "pdb");
-    viewer.setStyle({{}}, {{cartoon: {{color: "spectrum"}}}});
+
+    // Check if full backbone exists for cartoon rendering
+    var atoms = viewer.getModel(0).selectedAtoms({{atom: "N"}});
+    if (atoms.length > 0) {{
+        viewer.setStyle({{}}, {{cartoon: {{color: "spectrum"}}}});
+    }} else {{
+        // CA-only structure: use sphere + stick
+        viewer.setStyle({{}}, {{sphere: {{radius: 0.6, colorscheme: "ssPyMOL"}},
+                              stick: {{radius: 0.15, colorscheme: "ssPyMOL"}}}});
+    }}
+
     viewer.addShape({{
         type: "box",
         center: {{x: 0, y: 0, z: {center_z:.2f}}},
@@ -307,7 +317,6 @@ function initViewer() {{
     viewer.render();
 }}
 
-// Poll until 3Dmol is loaded
 var script = document.createElement("script");
 script.src = "https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.4.2/3Dmol-min.js";
 script.onload = initViewer;
