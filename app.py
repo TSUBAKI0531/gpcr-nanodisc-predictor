@@ -20,7 +20,7 @@ import numpy as np
 import py3Dmol
 import requests
 import streamlit as st
-from Bio.PDB import PDBList, PDBParser
+from Bio.PDB import PDBParser
 from fpdf import FPDF
 import streamlit.components.v1 as components
 
@@ -100,26 +100,15 @@ def predict_structure(sequence: str) -> Optional[str]:
 
 
 def fetch_pdb_by_id(pdb_id: str) -> Optional[str]:
-    """Download a PDB structure from RCSB by its 4-letter ID."""
-    pdbl = PDBList(verbose=False)
-    file_path: Optional[str] = None
+    """Download a PDB structure from RCSB via REST API."""
+    url = f"https://files.rcsb.org/download/{pdb_id.upper()}.pdb"
     try:
-        file_path = pdbl.retrieve_pdb_file(
-            pdb_id, pdir=tempfile.gettempdir(), file_format="pdb"
-        )
-        with open(file_path, "r") as fh:
-            pdb_data = fh.read()
-        return pdb_data
-    except Exception as exc:
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        return resp.text
+    except requests.RequestException as exc:
         st.error(f"PDB fetch failed for '{pdb_id}': {exc}")
         return None
-    finally:
-        # Clean up downloaded file regardless of success/failure
-        try:
-            if file_path and os.path.exists(file_path):
-                os.remove(file_path)
-        except OSError:
-            pass
 
 
 # =============================================================================
@@ -155,7 +144,11 @@ def analyze_protein(
         Smoothing window size for the Z/hydrophobicity profile.
     """
     parser = PDBParser(QUIET=True)
-    structure = parser.get_structure("model", io.StringIO(pdb_string))
+    try:
+        structure = parser.get_structure("model", io.StringIO(pdb_string))
+    except Exception:
+        empty = ProfileData(np.array([]), np.array([]), 0.0, 0.0)
+        return AnalysisResult(0.0, 0.0, empty, np.array([]), valid=False)
 
     coords: list[np.ndarray] = []
     hydro: list[float] = []
