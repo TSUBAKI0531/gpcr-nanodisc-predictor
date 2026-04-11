@@ -17,7 +17,6 @@ from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-import py3Dmol
 import requests
 import streamlit as st
 from Bio.PDB import PDBParser
@@ -275,20 +274,35 @@ def create_pdf(
 
 def render_3d_view(pdb_data: str, profile: ProfileData, belt_width: float) -> None:
     """Render interactive 3D structure with membrane belt overlay."""
-    view = py3Dmol.view(width=700, height=450)
-    view.addModel(pdb_data, "pdb")
-    view.setStyle({"cartoon": {"color": "spectrum"}})
-
     center_z = (profile.belt_min + profile.belt_max) / 2.0
-    view.addShape({
-        "type": "Box",
-        "center": {"x": 0, "y": 0, "z": center_z},
-        "dimensions": {"w": 60, "h": 60, "d": belt_width},
-        "color": "yellow",
-        "opacity": 0.25,
-    })
-    view.zoomTo()
-    components.html(view._make_html(), height=450, width=800, scrolling=False)
+
+    # Escape PDB text for embedding in JavaScript template literal
+    pdb_escaped = (
+        pdb_data
+        .replace("\\", "\\\\")
+        .replace("`", "\\`")
+        .replace("${", "\\${")
+    )
+
+    html = f"""
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.4.2/3Dmol-min.js"></script>
+    <div id="viewer3d" style="width:100%;height:450px;position:relative;"></div>
+    <script>
+        var viewer = $3Dmol.createViewer("viewer3d", {{backgroundColor: "white"}});
+        viewer.addModel(`{pdb_escaped}`, "pdb");
+        viewer.setStyle({{}}, {{cartoon: {{color: "spectrum"}}}});
+        viewer.addShape({{
+            type: "box",
+            center: {{x: 0, y: 0, z: {center_z:.2f}}},
+            dimensions: {{w: 60, h: 60, d: {belt_width:.2f}}},
+            color: "yellow",
+            opacity: 0.25
+        }});
+        viewer.zoomTo();
+        viewer.render();
+    </script>
+    """
+    components.html(html, height=480, width=800, scrolling=False)
 
 
 def plot_hydrophobic_profile(
