@@ -276,7 +276,6 @@ def render_3d_view(pdb_data: str, profile: ProfileData, belt_width: float) -> No
     """Render interactive 3D structure with membrane belt overlay."""
     center_z = (profile.belt_min + profile.belt_max) / 2.0
 
-    # Escape PDB text for embedding in JavaScript template literal
     pdb_escaped = (
         pdb_data
         .replace("\\", "\\\\")
@@ -286,31 +285,34 @@ def render_3d_view(pdb_data: str, profile: ProfileData, belt_width: float) -> No
 
     html = f"""<!DOCTYPE html>
 <html>
-<head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.4.2/3Dmol-min.js"></script>
-    <style>
-        body {{ margin:0; padding:0; overflow:hidden; }}
-        #viewer3d {{ width:100%; height:450px; position:relative; }}
-    </style>
-</head>
+<head><style>
+    body {{ margin:0; padding:0; overflow:hidden; }}
+    #viewer3d {{ width:100%; height:450px; position:relative; }}
+</style></head>
 <body>
-    <div id="viewer3d"></div>
-    <script>
-        window.addEventListener("load", function() {{
-            var viewer = $3Dmol.createViewer("viewer3d", {{backgroundColor: "white"}});
-            viewer.addModel(`{pdb_escaped}`, "pdb");
-            viewer.setStyle({{}}, {{cartoon: {{color: "spectrum"}}}});
-            viewer.addShape({{
-                type: "box",
-                center: {{x: 0, y: 0, z: {center_z:.2f}}},
-                dimensions: {{w: 60, h: 60, d: {belt_width:.2f}}},
-                color: "yellow",
-                opacity: 0.25
-            }});
-            viewer.zoomTo();
-            viewer.render();
-        }});
-    </script>
+<div id="viewer3d"></div>
+<script>
+function initViewer() {{
+    var viewer = $3Dmol.createViewer("viewer3d", {{backgroundColor: "white"}});
+    viewer.addModel(`{pdb_escaped}`, "pdb");
+    viewer.setStyle({{}}, {{cartoon: {{color: "spectrum"}}}});
+    viewer.addShape({{
+        type: "box",
+        center: {{x: 0, y: 0, z: {center_z:.2f}}},
+        dimensions: {{w: 60, h: 60, d: {belt_width:.2f}}},
+        color: "yellow",
+        opacity: 0.25
+    }});
+    viewer.zoomTo();
+    viewer.render();
+}}
+
+// Poll until 3Dmol is loaded
+var script = document.createElement("script");
+script.src = "https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.4.2/3Dmol-min.js";
+script.onload = initViewer;
+document.head.appendChild(script);
+</script>
 </body>
 </html>"""
     components.html(html, height=480, width=800, scrolling=False)
